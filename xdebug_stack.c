@@ -1282,6 +1282,46 @@ static void xdebug_build_fname(xdebug_func *tmp, zend_execute_data *edata TSRMLS
 }
 #endif
 
+inline void xdebug_count_line(char *filename, int lineno, int executable, int deadcode TSRMLS_DC)
+{
+	xdebug_coverage_file *file;
+	xdebug_coverage_line *line;
+
+	if (strcmp(XG(previous_filename), filename) == 0) {
+		file = XG(previous_file);
+	} else {
+		/* Check if the file already exists in the hash */
+		if (!xdebug_hash_find(XG(code_coverage), filename, strlen(filename), (void *) &file)) {
+			/* The file does not exist, so we add it to the hash */
+			file = xdebug_coverage_file_ctor(filename);
+
+			xdebug_hash_add(XG(code_coverage), filename, strlen(filename), file);
+		}
+		XG(previous_filename) = file->name;
+		XG(previous_file) = file;
+	}
+
+	/* Check if the line already exists in the hash */
+	if (!xdebug_hash_index_find(file->lines, lineno, (void *) &line)) {
+		line = xdmalloc(sizeof(xdebug_coverage_line));
+		line->lineno = lineno;
+		line->count = 0;
+		line->executable = 0;
+
+		xdebug_hash_index_add(file->lines, lineno, line);
+	}
+
+	if (executable) {
+		if (line->executable != 1 && deadcode) {
+			line->executable = 2;
+		} else {
+			line->executable = 1;
+		}
+	} else {
+		line->count++;
+	}
+}
+
 function_stack_entry *xdebug_add_stack_frame(zend_execute_data *zdata, zend_op_array *op_array, int type TSRMLS_DC)
 {
 	zend_execute_data    *edata;
