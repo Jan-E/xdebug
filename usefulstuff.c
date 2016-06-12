@@ -39,6 +39,9 @@
 #include "ext/standard/php_lcg.h"
 #include "ext/standard/flock_compat.h"
 #include "main/php_ini.h"
+#if defined(WIN32) && PHP_VERSION_ID >= 70100
+#include "win32/syslog.h"
+#endif
 
 #ifndef NAME_MAX
 # ifdef _AIX
